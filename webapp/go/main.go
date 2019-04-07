@@ -3,10 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
-	_ "net/http/pprof"
-	"runtime"
 	"strconv"
 
 	"github.com/go-martini/martini"
