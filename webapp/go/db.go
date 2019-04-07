@@ -87,7 +87,6 @@ func isLockedUser(user *User) (bool, error) {
 	//
 	//row.Scan(&ni)
 
-	succ := 0
 	c := redisConnection()
 	var key = redisUserKey + string(user.ID)
 	failureTime := redisGetInt(key, c)
