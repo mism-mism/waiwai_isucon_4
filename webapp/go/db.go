@@ -24,7 +24,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	c := redisConnection()
 	defer c.Close()
 	key := redisUserKey + strconv.Itoa(user.ID)
-	ipKey := redisIpKey + strconv.Itoa(user.ID)
+	ipKey := redisIpKey + remoteAddr
 	if succeeded {
 		succ = 1
 
