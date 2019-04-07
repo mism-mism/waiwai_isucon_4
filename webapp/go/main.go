@@ -3,10 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
-	_ "net/http/pprof"
-	"runtime"
 	"strconv"
 
 	"github.com/go-martini/martini"
@@ -30,14 +27,6 @@ func init() {
 		getEnv("ISU4_DB_PORT", "3306"),
 		getEnv("ISU4_DB_NAME", "isu4_qualifier"),
 	)
-
-	// ここからプロファイリングの設定
-	// TODO 本番時は消す
-	runtime.SetBlockProfileRate(1)
-	go func() {
-		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
-	}()
-	// ここまでプロファイリングの設定
 
 	var err error
 
