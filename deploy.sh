@@ -1,16 +1,14 @@
 #!/bin/sh
 
-# sudo を付けて実行してね！
-
 cd webapp/go
 ./build.sh
 
-rm /var/log/mysqld.log
-rm /var/log/nginx/*
-rm /var/log/redis/*
-rm /tmp/isucon.go.log
+sudo rm /var/log/mysqld.log
+sudo find /var/log/nginx -type f | sudo xargs rm
+sudo find /var/log/redis -type f | sudo xargs rm
+sudo rm /tmp/isucon.go.log
 
-/etc/init.d/mysqld restart
-/etc/init.d/redis restart
-/etc/init.d/nginx restart
-/etc/init.d/supervisord restart
+sudo /etc/init.d/mysqld restart
+sudo /etc/init.d/redis restart
+sudo /etc/init.d/nginx restart
+sudo /etc/init.d/supervisord restart
