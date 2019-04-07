@@ -31,7 +31,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		//	user.ID)
 
 		db.Exec(
-			" INSERT INTO login_ip(ip) VALUES(?) ON DUPLICATE KEY UPDATE failure_time=0",
+			"INSERT INTO login_ip(ip) VALUES(?) ON DUPLICATE KEY UPDATE failure_time=0",
 			remoteAddr)
 	}
 
