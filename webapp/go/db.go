@@ -17,6 +17,7 @@ var (
 )
 
 const redisUserKey = "userId-"
+const redisIpKey = "ip-"
 
 func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
 	succ := 0
@@ -27,6 +28,9 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 
 		key := redisUserKey + strconv.Itoa(user.ID)
 		redisSetInt(key, 0, c)
+
+		ipKey := redisIpKey + remoteAddr
+		redisSetInt(ipKey, 0, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = 0  WHERE id = ?",
 		//	user.ID)
@@ -39,11 +43,17 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		key := redisUserKey + strconv.Itoa(user.ID)
 
 		failureTime := redisGetInt(key, c)
-
 		redisSetInt(key, failureTime+1, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
 		//	user.ID)
+	}
+
+	if succ == 0 {
+		ipKey := redisIpKey + remoteAddr
+
+		failureTime := redisGetInt(ipKey, c)
+		redisSetInt(ipKey, failureTime+1, c)
 	}
 
 	_, err := db.Exec(
@@ -94,23 +104,27 @@ func isLockedUser(user *User) (bool, error) {
 }
 
 func isBannedIP(ip string) (bool, error) {
-	var ni sql.NullInt64
-	row := db.QueryRow(
-		"SELECT COUNT(1) AS failures FROM login_log WHERE "+
-			"ip = ? AND id > IFNULL((select id from login_log where ip = ? AND "+
-			"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
-		ip, ip,
-	)
-	err := row.Scan(&ni)
+	//var ni sql.NullInt64
+	//	//row := db.QueryRow(
+	//	//	"SELECT COUNT(1) AS failures FROM login_log WHERE "+
+	//	//		"ip = ? AND id > IFNULL((select id from login_log where ip = ? AND "+
+	//	//		"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
+	//	//	ip, ip,
+	//	//)
+	//	//err := row.Scan(&ni)
+	//	//
+	//	//switch {
+	//	//case err == sql.ErrNoRows:
+	//	//	return false, nil
+	//	//case err != nil:
+	//	//	return false, err
+	//	//}
 
-	switch {
-	case err == sql.ErrNoRows:
-		return false, nil
-	case err != nil:
-		return false, err
-	}
+	c := redisConnection()
+	key := redisIpKey + ip
+	failureTime := redisGetInt(key, c)
 
-	return IPBanThreshold <= int(ni.Int64), nil
+	return IPBanThreshold <= failureTime, nil
 }
 
 func attemptLogin(req *http.Request) (*User, error) {
@@ -346,12 +360,11 @@ func redisGetInt(key string, c redis.Conn) int {
 	return s
 }
 
-
 func redisLPush(key string, value string, c redis.Conn) {
 	c.Do("LPUSH", key, value)
 }
 
-func redisLrange(key string, start int, end int, c redis.Conn)([]string, error) {
+func redisLrange(key string, start int, end int, c redis.Conn) ([]string, error) {
 	s, err := redis.Strings(c.Do("LRANGE", key, start, end))
 	if err != nil {
 		return nil, err
