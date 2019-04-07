@@ -3,10 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -341,8 +339,7 @@ func redisSetInt(key string, value int, c redis.Conn) {
 func redisGetInt(key string, c redis.Conn) int {
 	s, err := redis.Int(c.Do("GET", key))
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return 0
 	}
 
 	return s
