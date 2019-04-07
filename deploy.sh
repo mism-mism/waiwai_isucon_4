@@ -13,3 +13,5 @@ sudo /etc/init.d/mysqld restart
 sudo /etc/init.d/redis restart
 sudo /etc/init.d/nginx restart
 sudo /etc/init.d/supervisord restart
+
+echo "flushall" | redis-cli
