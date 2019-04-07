@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gomodule/redigo/redis"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"runtime"
 	"strconv"
 
@@ -115,4 +117,40 @@ func main() {
 	})
 
 	http.ListenAndServe(":8080", m)
+}
+
+// redis接続
+// 接続
+//  c := redis_connection()
+// defer c.Close()
+//
+//  var key = "KEY"
+//  var val = "VALUE"
+// redisSet(key, val, c)
+// s := redisGet(key, c)
+// fmt.Println(s)
+func redisConnection() redis.Conn {
+	const redisHost = "localhost:6379"
+
+	//redisに接続
+	c, err := redis.Dial("tcp", redisHost)
+	if err != nil {
+		panic(err)
+	}
+
+	return c
+}
+
+func redisSet(key string, value string, c redis.Conn) {
+	c.Do("SET", key, value)
+}
+
+func redisGet(key string, c redis.Conn) string {
+	s, err := redis.String(c.Do("GET", key))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	return s
 }
