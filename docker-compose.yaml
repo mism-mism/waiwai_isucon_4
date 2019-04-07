@@ -1,0 +1,29 @@
+version: "3"
+services:
+  go:
+    build: "docker/go"
+    tty: true
+    ports:
+      - "8080:8080"
+    volumes: 
+      - ./webapp/go:/go
+      - ./gocode:/go/gocode
+      - ./env.sh:/go/env.sh
+      - ./webapp/public:/public
+    environment:
+      - "GOPATH=/gocode"
+  nginx:
+    build: "docker/nginx"
+    ports:
+      - "80:80"
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: isu4_qualifier
+      MYSQL_USER: isucon
+      MYSQL_PASSWORD: isucon
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
