@@ -345,3 +345,17 @@ func redisGetInt(key string, c redis.Conn) int {
 
 	return s
 }
+
+
+func redisLPush(key string, value string, c redis.Conn) {
+	c.Do("LPUSH", key, value)
+}
+
+func redisLrange(key string, start int, end int, c redis.Conn)([]string, error) {
+	s, err := redis.Strings(c.Do("LRANGE", key, start, end))
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
