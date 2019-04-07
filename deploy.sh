@@ -1,14 +1,18 @@
 #!/bin/sh
 
+# sudo を付けて実行してね！
+
+su - isucon
 git pull origin master
+exit
 
 cd webapp/go
 ./build.sh
 
-sudo /etc/init.d/mysqld restart
-sudo /etc/init.d/nginx restart
-sudo /etc/init.d/supervisord restart
+/etc/init.d/mysqld restart
+/etc/init.d/nginx restart
+/etc/init.d/supervisord restart
 
-sudo rm /var/log/mysqld.log
-sudo rm /var/log/nginx/*
-sudo rm /tmp/isucon.go.log
+rm /var/log/mysqld.log
+rm /var/log/nginx/*
+rm /tmp/isucon.go.log
