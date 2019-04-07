@@ -14,3 +14,9 @@ CREATE TABLE IF NOT EXISTS `login_log` (
   `ip` varchar(255) NOT NULL,
   `succeeded` tinyint NOT NULL
 ) DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `login_ip` (
+  `ip` varchar(255) NOT NULL PRIMARY KEY,
+  `failure_time` INT DEFAULT 0 NOT NULL
+  `is_locked` tinyint INT DEFAULT 0 NOT NULL
+) DEFAULT CHARSET=utf8;
