@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gomodule/redigo/redis"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if succeeded {
 		succ = 1
 
-		var key = redisUserKey + string(user.ID)
+		key := redisUserKey + strconv.Itoa(user.ID)
 		redisSetInt(key, 0, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = 0  WHERE id = ?",
@@ -35,7 +36,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
-		var key = redisUserKey + string(user.ID)
+		key := redisUserKey + strconv.Itoa(user.ID)
 
 		failureTime := redisGetInt(key, c)
 
@@ -86,7 +87,7 @@ func isLockedUser(user *User) (bool, error) {
 	//row.Scan(&ni)
 
 	c := redisConnection()
-	var key = redisUserKey + string(user.ID)
+	key := redisUserKey + strconv.Itoa(user.ID)
 	failureTime := redisGetInt(key, c)
 
 	return UserLockThreshold <= failureTime, nil
