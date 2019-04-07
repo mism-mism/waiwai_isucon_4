@@ -23,14 +23,14 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	succ := 0
 	c := redisConnection()
 	defer c.Close()
+	key := redisUserKey + strconv.Itoa(user.ID)
+	ipKey := redisIpKey + strconv.Itoa(user.ID)
 	if succeeded {
 		succ = 1
 
-		key := redisUserKey + strconv.Itoa(user.ID)
-		redisSetInt(key, 0, c)
+		redisDel(key, c)
+		redisDel(ipKey, c)
 
-		ipKey := redisIpKey + remoteAddr
-		redisSetInt(ipKey, 0, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = 0  WHERE id = ?",
 		//	user.ID)
@@ -40,18 +40,16 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
-		key := redisUserKey + strconv.Itoa(user.ID)
-
-		failureTime := redisGetInt(key, c)
-		redisSetInt(key, failureTime+1, c)
+		if succ == 0 {
+			failureTime := redisGetInt(key, c)
+			redisSetInt(key, failureTime+1, c)
+		}
 		//db.Exec(
 		//	"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
 		//	user.ID)
 	}
 
 	if succ == 0 {
-		ipKey := redisIpKey + remoteAddr
-
 		failureTime := redisGetInt(ipKey, c)
 		redisSetInt(ipKey, failureTime+1, c)
 	}
@@ -349,6 +347,10 @@ func redisConnection() redis.Conn {
 
 func redisSetInt(key string, value int, c redis.Conn) {
 	c.Do("SET", key, value)
+}
+
+func redisDel(key string, c redis.Conn) {
+	c.Do("DEL", key)
 }
 
 func redisGetInt(key string, c redis.Conn) int {
