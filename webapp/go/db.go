@@ -319,7 +319,6 @@ func lockedUsers() []string {
 // redisSet(key, val, c)
 // s := redisGet(key, c)
 // fmt.Println(s)
-// redis接続用の構造体
 func redisConnection() redis.Conn {
 	const redisHost = "localhost:6379"
 
