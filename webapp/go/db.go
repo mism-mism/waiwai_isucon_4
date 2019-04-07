@@ -21,6 +21,10 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		db.Exec(
 			"UPDATE user SET failure_time = 0  WHERE id = ?",
 			user.ID)
+
+		db.Exec(
+			" INSERT INTO login_ip(ip) VALUES(?) ON DUPLICATE KEY UPDATE failure_time=0",
+			remoteAddr)
 	}
 
 	var userId sql.NullInt64
@@ -28,9 +32,17 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
 
+		if succ == 0 {
+			db.Exec(
+				"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
+				user.ID)
+		}
+	}
+
+	if succ == 0 {
 		db.Exec(
-			"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
-			user.ID)
+			"INSERT INTO login_ip(ip,failure_time) VALUES(?,1) ON DUPLICATE KEY UPDATE failure_time=failure_time + 1",
+			remoteAddr)
 	}
 
 	_, err := db.Exec(
@@ -77,21 +89,29 @@ func isLockedUser(user *User) (bool, error) {
 }
 
 func isBannedIP(ip string) (bool, error) {
+	//var ni sql.NullInt64
+	//row := db.QueryRow(
+	//	"SELECT COUNT(1) AS failures FROM login_log WHERE "+
+	//		"ip = ? AND id > IFNULL((select id from login_log where ip = ? AND "+
+	//		"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
+	//	ip, ip,
+	//)
+	//err := row.Scan(&ni)
+	//
+	//switch {
+	//case err == sql.ErrNoRows:
+	//	return false, nil
+	//case err != nil:
+	//	return false, err
+	//}
+
 	var ni sql.NullInt64
 	row := db.QueryRow(
-		"SELECT COUNT(1) AS failures FROM login_log WHERE "+
-			"ip = ? AND id > IFNULL((select id from login_log where ip = ? AND "+
-			"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
-		ip, ip,
+		"SELECT failure_time FROM login_ip WHERE ip = ?",
+		ip,
 	)
-	err := row.Scan(&ni)
 
-	switch {
-	case err == sql.ErrNoRows:
-		return false, nil
-	case err != nil:
-		return false, err
-	}
+	row.Scan(&ni)
 
 	return IPBanThreshold <= int(ni.Int64), nil
 }
