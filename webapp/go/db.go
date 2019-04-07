@@ -41,7 +41,7 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 
 		failureTime := redisGetInt(key, c)
 
-		redisSetInt(key, failureTime + 1, c)
+		redisSetInt(key, failureTime+1, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
 		//	user.ID)
@@ -340,7 +340,7 @@ func redisSetInt(key string, value int, c redis.Conn) {
 }
 
 func redisGetInt(key string, c redis.Conn) int {
-	s, err := redis.String(c.Do("GET", key))
+	s, err := redis.Int(c.Do("GET", key))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
