@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"github.com/gomodule/redigo/redis"
 	"net/http"
 	"time"
 )
@@ -14,13 +15,20 @@ var (
 	ErrWrongPassword = errors.New("Wrong password")
 )
 
+const redisUserKey = "userId-"
+
 func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
 	succ := 0
+	c := redisConnection()
+	defer c.Close()
 	if succeeded {
 		succ = 1
-		db.Exec(
-			"UPDATE user SET failure_time = 0  WHERE id = ?",
-			user.ID)
+
+		var key = redisUserKey + string(user.ID)
+		redisSetInt(key, 0, c)
+		//db.Exec(
+		//	"UPDATE user SET failure_time = 0  WHERE id = ?",
+		//	user.ID)
 
 		db.Exec(
 			" INSERT INTO login_ip(ip) VALUES(?) ON DUPLICATE KEY UPDATE failure_time=0",
@@ -31,12 +39,14 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
+		var key = redisUserKey + string(user.ID)
 
-		if succ == 0 {
-			db.Exec(
-				"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
-				user.ID)
-		}
+		failureTime := redisGetInt(key, c)
+
+		redisSetInt(key, failureTime+1, c)
+		//db.Exec(
+		//	"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
+		//	user.ID)
 	}
 
 	if succ == 0 {
@@ -76,16 +86,20 @@ func isLockedUser(user *User) (bool, error) {
 	//case err != nil:
 	//	return false, err
 	//}
+	//
+	//var ni sql.NullInt64
+	//row := db.QueryRow(
+	//	"SELECT failure_time FROM users WHERE id = ?",
+	//	user.ID,
+	//)
+	//
+	//row.Scan(&ni)
 
-	var ni sql.NullInt64
-	row := db.QueryRow(
-		"SELECT failure_time FROM users WHERE id = ?",
-		user.ID,
-	)
+	c := redisConnection()
+	var key = redisUserKey + string(user.ID)
+	failureTime := redisGetInt(key, c)
 
-	row.Scan(&ni)
-
-	return UserLockThreshold <= int(ni.Int64), nil
+	return UserLockThreshold <= failureTime, nil
 }
 
 func isBannedIP(ip string) (bool, error) {
@@ -312,4 +326,39 @@ func lockedUsers() []string {
 	}
 
 	return userIds
+}
+
+// redis接続
+// 接続
+//  c := redis_connection()
+// defer c.Close()
+//
+//  var key = "KEY"
+//  var val = "VALUE"
+// redisSet(key, val, c)
+// s := redisGet(key, c)
+// fmt.Println(s)
+func redisConnection() redis.Conn {
+	const redisHost = "localhost:6379"
+
+	//redisに接続
+	c, err := redis.Dial("tcp", redisHost)
+	if err != nil {
+		panic(err)
+	}
+
+	return c
+}
+
+func redisSetInt(key string, value int, c redis.Conn) {
+	c.Do("SET", key, value)
+}
+
+func redisGetInt(key string, c redis.Conn) int {
+	s, err := redis.Int(c.Do("GET", key))
+	if err != nil {
+		return 0
+	}
+
+	return s
 }
