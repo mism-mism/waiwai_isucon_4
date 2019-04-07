@@ -37,8 +37,10 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
-		failureTime := redisGetInt(key, c)
-		redisSetInt(key, failureTime+1, c)
+		if succ == 0 {
+			failureTime := redisGetInt(key, c)
+			redisSetInt(key, failureTime+1, c)
+		}
 		//db.Exec(
 		//	"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
 		//	user.ID)
