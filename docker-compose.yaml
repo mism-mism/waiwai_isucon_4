@@ -5,8 +5,17 @@ services:
     ports:
       - "8080"
     volumes: 
-      - ./webapp:/webapp
+      - ./webapp/go:/webapp/go
   nginx:
     build: "docker/nginx"
     ports:
       - "80:80"
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: isu4_qualifier
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
