@@ -16,16 +16,17 @@ var (
 )
 
 const redisUserKey = "userId-"
+const redislockUser = "LockUser"
 
 func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
 	succ := 0
 	c := redisConnection()
 	defer c.Close()
+	var key = redisUserKey + string(user.ID)
 	if succeeded {
 		succ = 1
 
-		var key = redisUserKey + string(user.ID)
-		redisSetInt(key, 0, c)
+		redisDel(key, c)
 		//db.Exec(
 		//	"UPDATE user SET failure_time = 0  WHERE id = ?",
 		//	user.ID)
@@ -35,8 +36,6 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
-		var key = redisUserKey + string(user.ID)
-
 		failureTime := redisGetInt(key, c)
 
 		redisSetInt(key, failureTime+1, c)
@@ -320,6 +319,7 @@ func lockedUsers() []string {
 // redisSet(key, val, c)
 // s := redisGet(key, c)
 // fmt.Println(s)
+// redis接続用の構造体
 func redisConnection() redis.Conn {
 	const redisHost = "localhost:6379"
 
@@ -334,6 +334,10 @@ func redisConnection() redis.Conn {
 
 func redisSetInt(key string, value int, c redis.Conn) {
 	c.Do("SET", key, value)
+}
+
+func redisDel(key string, c redis.Conn) {
+	c.Do("DEL", key)
 }
 
 func redisGetInt(key string, c redis.Conn) int {
