@@ -2,10 +2,6 @@
 
 # sudo を付けて実行してね！
 
-su - isucon
-git pull origin master
-exit
-
 cd webapp/go
 ./build.sh
 
