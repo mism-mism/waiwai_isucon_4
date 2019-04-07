@@ -3,15 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/go-martini/martini"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/martini-contrib/render"
-	"github.com/martini-contrib/sessions"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"strconv"
+
+	"github.com/go-martini/martini"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/martini-contrib/render"
+	"github.com/martini-contrib/sessions"
 )
 
 var db *sql.DB
@@ -62,7 +63,6 @@ func main() {
 	store := sessions.NewCookieStore([]byte("secret-isucon"))
 	m.Use(sessions.Sessions("isucon_go_session", store))
 
-	m.Use(martini.Static("../public"))
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
 	}))
