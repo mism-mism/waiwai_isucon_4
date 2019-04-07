@@ -18,12 +18,19 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 	succ := 0
 	if succeeded {
 		succ = 1
+		db.Exec(
+			"UPDATE user SET failure_time = 0  WHERE id = ?",
+			user.ID)
 	}
 
 	var userId sql.NullInt64
 	if user != nil {
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
+
+		db.Exec(
+			"UPDATE user SET failure_time = failure_time + 1  WHERE id = ?",
+			user.ID)
 	}
 
 	_, err := db.Exec(
@@ -40,21 +47,31 @@ func isLockedUser(user *User) (bool, error) {
 		return false, nil
 	}
 
+	//var ni sql.NullInt64
+	//row := db.QueryRow(
+	//	"SELECT COUNT(1) AS failures FROM login_log WHERE "+
+	//		"user_id = ? AND id > IFNULL((select id from login_log where user_id = ? AND "+
+	//		"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
+	//	user.ID, user.ID,
+	//)
+	//
+	//
+	//err := row.Scan(&ni)
+	//
+	//switch {
+	//case err == sql.ErrNoRows:
+	//	return false, nil
+	//case err != nil:
+	//	return false, err
+	//}
+
 	var ni sql.NullInt64
 	row := db.QueryRow(
-		"SELECT COUNT(1) AS failures FROM login_log WHERE "+
-			"user_id = ? AND id > IFNULL((select id from login_log where user_id = ? AND "+
-			"succeeded = 1 ORDER BY id DESC LIMIT 1), 0);",
-		user.ID, user.ID,
+		"SELECT failure_time FROM users WHERE id = ?",
+		user.ID,
 	)
-	err := row.Scan(&ni)
 
-	switch {
-	case err == sql.ErrNoRows:
-		return false, nil
-	case err != nil:
-		return false, err
-	}
+	row.Scan(&ni)
 
 	return UserLockThreshold <= int(ni.Int64), nil
 }
